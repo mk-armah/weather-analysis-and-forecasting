@@ -76,8 +76,8 @@ def json_to_pandas(jsonfile: dict, dropna: bool = True) -> pd.DataFrame:
 
     Note : Not all columns in the Samples In the Json file have wind_gust and rain values"""
 
-    df = pd.DataFrame(file['hourly'])  #
-    df['zone'] = file['timezone'].split("/")[1] #get city 
+    df = pd.DataFrame(jsonfile['hourly'])  #
+    df['zone'] = jsonfile['timezone'].split("/")[1] #get city 
 
     for i in range(len(df)):
         if i == 0:
