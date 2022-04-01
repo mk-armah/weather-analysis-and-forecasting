@@ -6,6 +6,7 @@ import time
 import json
 #! pip install geopy ##uncomment this if you don't have geopy installed
 from geopy.geocoders import Nominatim
+import pandas as pd
 
 ##################################################### Daily Data #############################################
 
@@ -53,7 +54,7 @@ def get_timestamp(y:int,m:int,d:int):
     return utc_timestamp
 
 
-def make_request(lon,lat,stamp:int,unit:str = "metric",apikey:str = "9bf841c7a680fd40c5f7d87b756a5e51")->str:
+def make_request(lon,lat,stamp:int,unit:str = "metric",apikey:str = "9bf841c7a680fd40c5f7d87b756a5e51")->json:
     """get data for an entire day"""
     url = "https://api.openweathermap.org/data/2.5/onecall/timemachine?lat={_lat_}&lon={_long_}&units={_unit_}&dt={_stamp_}&appid={_apikey_}".format(_lat_ = lat,_long_ = lon,_unit_ = unit,_stamp_ = int(stamp),_apikey_ = apikey)
     output=requests.get(url)
@@ -66,11 +67,37 @@ def decode_Unix(timestamp):
     return timestamp.strftime('%Y-%m-%d %H:%M:%S')
 
 
+def json_to_pandas(jsonfile: dict, dropna: bool = True) -> pd.DataFrame:
+    """Extract Relevant Data from Json File and convert to Pandas DataFrame
+
+    json:dict|json --> Input format json file format; the output after making a Request
+    dropna:bool    --> A boolean any[True,False] - removes all NaN's from the dataframe; this will remove wind_gust and rain column
+
+    Note : Not all columns in the Samples In the Json file have wind_gust and rain values"""
+
+    df = pd.DataFrame(file['hourly'])  #
+    df['zone'] = file['timezone'].split("/")[1] #get city 
+
+    for i in range(len(df)):
+        if i == 0:
+            weather_data = pd.DataFrame(df["weather"][i])
+        else:
+            weather_data = pd.concat((weather_data, pd.DataFrame(df["weather"][i])), axis=0) 
+
+    weather_data.reset_index(inplace=True, drop=True)
+
+    df = df.join(weather_data, how="outer")
+    df = df.dropna(axis=1) if dropna else df  # returns a DataFrame free of NaN's if dropna is specified as True
+    df = df.drop(columns=['weather'], axis=1)  # drop weather after extracting features
+
+    return df
+
+
 if __name__=="__main__":
     stamp = get_timestamp(y=2022, m=3, d=30)
     print("Decoded Stamp: ",decode_Unix(stamp))
     output = make_request(location.longitude, location.latitude, stamp)
-    print(output)
+    json_to_pandas(output)
 
 
 
