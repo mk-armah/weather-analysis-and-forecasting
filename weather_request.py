@@ -53,7 +53,7 @@ def get_timestamp(y:int,m:int,d:int):
     return utc_timestamp
 
 
-def make_request(lon,lat,stamp:int,unit:str = "metric",apikey:str = "9bf841c7a680fd40c5f7d87b756a5e51")->str:
+def make_request(lon,lat,stamp:int,unit:str = "metric",apikey:str = "9bf841c7a680fd40c5f7d87b756a5e51")->json:
     """get data for an entire day"""
     url = "https://api.openweathermap.org/data/2.5/onecall/timemachine?lat={_lat_}&lon={_long_}&units={_unit_}&dt={_stamp_}&appid={_apikey_}".format(_lat_ = lat,_long_ = lon,_unit_ = unit,_stamp_ = int(stamp),_apikey_ = apikey)
     output=requests.get(url)
