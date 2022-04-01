@@ -36,13 +36,14 @@ location = geolocator.geocode("Lagos") #you can change the parameter of this met
 location.latitude
 location.longitude
 
+
 def get_timestamp(y:int,m:int,d:int):
     """convert time to a Unix timestamp
     
     y:int  --> Year .e.g 2022
     m:int  --> Month, Month should be an inter of range 1 to 12 inclusive e.g. 3,indicating the month March 
     d:int  --> Day of the month; should be an integer
-   
+      
     stamp = get_timestamp(y = 2022,m = 3,d = 30)
     print(stamp)
     >>> 1648598400.0 """
