@@ -1,9 +1,20 @@
+"""
+Author: Eng. Michael Kofi Armah
+This is a Test Script for weather_request functions
+Date Created: 6/11/22
+Date Modified: 6/18/22
+"""
+
+
 import pytest
 from weather_request import *
 import geopy
 import jsonschema
 from jsonschema import validate
-from datetime import datetime,timezone
+from jsonschema.exceptions import ValidationError
+from datetime import datetime, timezone
+import pandas as pd
+
 
 
 @pytest.fixture
@@ -28,7 +39,7 @@ def test_get_geocode():
 
 
 @pytest.fixture
-def current_datetime():
+def current_datetime() -> datetime:
     """Get the current time"""
     ctime = datetime.now(tz=timezone.utc)
     return ctime
@@ -54,22 +65,23 @@ def test_get_timestamp(current_datetime):
     return stamp
 
 
-
 def test_decode_Unix(test_get_timestamp):
     """Test decode_Unix function,
     the decode Unix function to be tested converts
-    a timestamp into datetime
+    a timestamp into datetime with custom formats
     
     Args:
         test_get_timestand: A fixture for testing the get_timestamp function"""
-
-    decode_Unix(test_get_timestamp)
-
+    try:
+        assert isinstance(decode_Unix(test_get_timestamp),str)
     
+    except AssertionError as error:
+        raise error("Time Stamp is not an instance of datetime")
 
 
-def test_make_request(test_get_geocode,test_get_timestamp):
-    """A test function for the make_request function
+@pytest.fixture
+def request_data(test_get_geocode, test_get_timestamp):
+    """make data request function using the make_request function
     For this function to run, the get_geocode and get_timestamp should
     not produce  errors after test
      Args:
@@ -79,22 +91,49 @@ def test_make_request(test_get_geocode,test_get_timestamp):
         data = json file containig request data from OpenWeather
         """
 
-    try:
-        latitude = test_get_geocode.latitude
-        longitude = test_get_geocode.longitude
-        stamp = test_get_timestamp
-    except:
-        raise ArgumentError("An argument of this function Failed")
+    latitude = test_get_geocode.latitude
+    longitude = test_get_geocode.longitude
+    stamp = test_get_timestamp
+
+    request_data = make_request(lon = longitude, lat = latitude, stamp = stamp)
+
+    return request_data
+
+def test_make_request(request_data):
+    """A test function for the make_request function
+     Args:
+        request_data | pytest fixture: makes request to Open Weather using make_request function
+        """
+
+# define a schema for validating the requested json data
+    schema = {
+    "type": "object",
+    "properties": {
+        "timezone": {"type": "string"},
+        "lon": {"type": "number"},
+        "lat": {"type": "number"},
+        "hourly": {"type": "array"}
+        },
+    "required": ["hourly", "timezone", "lat", "lon"],
+    "dependentRequired": {"hourly": ["timezone"]}
+    }
     
-    else:
-        assert make_request(lon = longitude,lat = latitude,stamp = stamp)[0].status_code == 200
-
-
-def validateJson(test_make_request):
-
     try:
-        assert isinstance(test_make_request[1],json)
-        validate(instance=jsonData, schema=test_make_request[1])
-        
-    except jsonschema.exceptions.ValidationError as err:
-        print("Output is a Invalid")
+        assert request_data[0].status_code == 200
+        assert len(request_data[1]) > 1
+        validate(instance=request_data[1], schema=schema)
+
+    except AssertionError:
+        print("API DATA REQUEST FAILED")
+
+    except ValidationError:
+        print("Json Data failed Validation")
+
+
+def test_json_to_pandas(request_data):
+    """ Test the json_to_pandas function
+    Args:
+        request_data | pytest fixture: makes request to Open Weather using make_request function"""
+    
+    assert isinstance(json_to_pandas(jsonfile=request_data[0], dropna = True),pd.DataFrame)
+
